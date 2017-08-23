@@ -56,9 +56,9 @@ void mouseClicked(){
   legality = legality || HorizontalFlips(row,col);
   legality = legality || DiagonalFlips(row,col);
   */
-    VerticalFlips(row,col);
-    HorizontalFlips(row,col);
-    DiagonalFlips(row,col);
+    VerticalFlips(row,col,false);
+    HorizontalFlips(row,col,false);
+    DiagonalFlips(row,col,false);
     if(!legality){
       grid[row][col].piece = null;
       grid[row][col].empty = true;
@@ -69,12 +69,17 @@ void mouseClicked(){
     }
   }
   
+  if(blacksturn)
+    print(movesLeft("black"));
+  else
+    print(movesLeft("white"));
+    
   //print(VerticalFlips(row,col));
   //print(HorizontalFlips(row,col));
   //print(DiagonalFlips(row,col));
 }
 
-void VerticalFlips(int row,int col){ //flipping pieces in the same column
+void VerticalFlips(int row,int col,boolean testing){ //flipping pieces in the same column
   Boolean flipsMade = false;
   //Boolean flipsFromBelow = false;
   String ownColor = grid[row][col].piece._color;
@@ -95,7 +100,8 @@ void VerticalFlips(int row,int col){ //flipping pieces in the same column
     if(noBreaks){ //if no empty spaces, then they must be occupied by enemy color
       for(int u = closestFromAbove.y + 1;u < row;u ++){
         flipsMade = true;
-        grid[u][col].piece._color = ownColor; //flip em
+        if(!testing) //if VerticalFlips is called to see if legal moves are left, don't actually flip anything
+          grid[u][col].piece._color = ownColor; //flip em
       }
     }
   //}
@@ -113,14 +119,15 @@ void VerticalFlips(int row,int col){ //flipping pieces in the same column
     if(noBreaks){
       for(int d = closestFromBelow.y - 1;d > row;d --){
         flipsMade = true;
-        grid[d][col].piece._color = ownColor;
+        if(!testing)
+          grid[d][col].piece._color = ownColor;
       }
     }
   //}
   legality = legality || flipsMade;
 }
 
-void HorizontalFlips(int row,int col){ //flipping pieces in the same row
+void HorizontalFlips(int row,int col,boolean testing){ //flipping pieces in the same row
   Boolean flipsMade = false;
   String ownColor = grid[row][col].piece._color;
   Piece closestFromLeft = grid[row][col].piece;
@@ -138,7 +145,8 @@ void HorizontalFlips(int row,int col){ //flipping pieces in the same row
   if(noBreaks){
     for(int l = closestFromLeft.x + 1;l < col;l ++){
       flipsMade = true;
-      grid[row][l].piece._color = ownColor;
+      if(!testing) //if HorizontalFlips is called to see if legal moves are left, don't actually flip anything
+        grid[row][l].piece._color = ownColor;
     }
   }
   noBreaks = true;
@@ -154,23 +162,24 @@ void HorizontalFlips(int row,int col){ //flipping pieces in the same row
   if(noBreaks){
     for(int r = closestFromRight.x - 1;r > col;r --){
       flipsMade = true;
-      grid[row][r].piece._color = ownColor;
+      if(!testing)
+        grid[row][r].piece._color = ownColor;
     }
   }
   legality = legality || flipsMade;
 }
 
-void DiagonalFlips(int row,int col){ //flipping pieces diagonally
+void DiagonalFlips(int row,int col,boolean testing){ //flipping pieces diagonally
   //Boolean ret = false;
   String ownColor = grid[row][col].piece._color;
-  DiagonalHelper(row,col,-1,-1,ownColor); //top left direction
-  DiagonalHelper(row,col,1,-1,ownColor); //top right
-  DiagonalHelper(row,col,-1,1,ownColor); //bottom left
-  DiagonalHelper(row,col,1,1,ownColor); //bottom right
+  DiagonalHelper(row,col,-1,-1,ownColor,testing); //top left direction
+  DiagonalHelper(row,col,1,-1,ownColor,testing); //top right
+  DiagonalHelper(row,col,-1,1,ownColor,testing); //bottom left
+  DiagonalHelper(row,col,1,1,ownColor,testing); //bottom right
   //legality = legality || ret;
 }
 
-void DiagonalHelper(int row,int col,int dx,int dy,String ownColor){
+void DiagonalHelper(int row,int col,int dx,int dy,String ownColor,boolean testing){
   ArrayList<Piece> pieces = new ArrayList<Piece>();
   int x = col + dx;
   int y = row + dy;
@@ -189,12 +198,36 @@ void DiagonalHelper(int row,int col,int dx,int dy,String ownColor){
       y += dy;
     }
   }
-  if(ownFound)
+  if(ownFound && !testing) //if DiagonalFlips is called to see if legal moves are left, don't actually flip anything
     for(Piece p : pieces)
       p._color = ownColor;
   legality = legality || (ownFound && pieces.size() > 0);
 }
-    
+
+
+Boolean movesLeft(String c){
+  for(int i = 0;i < grid.length;i ++){
+    for(int x = 0;x < grid[i].length;x ++){
+      if(grid[i][x].empty){
+        grid[i][x].empty = false;
+        grid[i][x].piece = new Piece(c,i,x);
+        legality = false;
+        VerticalFlips(i,x,true);
+        HorizontalFlips(i,x,true);
+        DiagonalFlips(i,x,true);
+        grid[i][x].piece = null;
+        grid[i][x].empty = true;
+        if(legality){
+          legality = false;
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
 void draw(){
   drawGrid();
   if(blacksturn)
